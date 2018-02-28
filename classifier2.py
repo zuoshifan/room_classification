@@ -35,21 +35,28 @@ data/
             ...
 ```
 '''
+import os
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense
+from keras.utils import to_categorical
 from keras import applications
 from keras import regularizers
 
-# dimensions of our images.
-img_width, img_height = 150, 150
 
-top_model_weights_path = 'bottleneck_fc_model.h5'
+
+result_dir = 'four_classes/adam/'
+bn_train_path = result_dir + 'bottleneck_features_train.npy'
+bn_validation_path = result_dir + 'bottleneck_features_validation.npy'
+top_model_weights_path = result_dir + 'bottleneck_fc_model.h5'
 train_data_dir = 'data/train'
 validation_data_dir = 'data/validation'
-nb_train_samples = 3200
-nb_validation_samples = 704
+
+nb_classes = 4
+nb_train_samples = 1600 # per class
+nb_validation_samples = 320 # per class
+img_width, img_height = 150, 150
 epochs = 100
 batch_size = 32
 
@@ -67,8 +74,8 @@ def save_bottlebeck_features():
         class_mode=None,
         shuffle=False)
     bottleneck_features_train = model.predict_generator(
-        generator, nb_train_samples // batch_size)
-    np.save(open('bottleneck_features_train.npy', 'w'),
+        generator, nb_classes * nb_train_samples // batch_size)
+    np.save(open(bn_train_path, 'w'),
             bottleneck_features_train)
 
     generator = datagen.flow_from_directory(
@@ -78,31 +85,33 @@ def save_bottlebeck_features():
         class_mode=None,
         shuffle=False)
     bottleneck_features_validation = model.predict_generator(
-        generator, nb_validation_samples // batch_size)
-    np.save(open('bottleneck_features_validation.npy', 'w'),
+        generator, nb_classes * nb_validation_samples // batch_size)
+    np.save(open(bn_validation_path, 'w'),
             bottleneck_features_validation)
 
 
 def train_top_model():
-    train_data = np.load(open('bottleneck_features_train.npy'))
-    train_labels = np.array(
-        [0] * (nb_train_samples / 2) + [1] * (nb_train_samples / 2))
+    train_data = np.load(open(bn_train_path))
+    train_labels = np.repeat(np.arange(nb_classes), nb_train_samples)
+    # convert labels to categorical one-hot encoding
+    train_labels = to_categorical(train_labels, num_classes=nb_classes)
+    # print train_data.shape, train_labels.shape
 
-    validation_data = np.load(open('bottleneck_features_validation.npy'))
-    validation_labels = np.array(
-        [0] * (nb_validation_samples / 2) + [1] * (nb_validation_samples / 2))
+    validation_data = np.load(open(bn_validation_path))
+    validation_labels = np.repeat(np.arange(nb_classes), nb_validation_samples)
+    # convert labels to categorical one-hot encoding
+    validation_labels = to_categorical(validation_labels, num_classes=nb_classes)
+    # print validation_data.shape, validation_labels.shape
 
     model = Sequential()
     model.add(Flatten(input_shape=train_data.shape[1:]))
     # model.add(Dense(256, activation='relu'))
-    model.add(Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.001)))
+    model.add(Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.0012)))
     model.add(Dropout(0.5))
-    model.add(Dense(1, activation='sigmoid'))
+    model.add(Dense(nb_classes, activation='softmax'))
 
-    # model.compile(optimizer='rmsprop',
-    #               loss='binary_crossentropy', metrics=['accuracy'])
     model.compile(optimizer='adam',
-                  loss='binary_crossentropy', metrics=['accuracy'])
+                  loss='categorical_crossentropy', metrics=['accuracy'])
 
     history = model.fit(train_data, train_labels,
               epochs=epochs,
@@ -110,7 +119,7 @@ def train_top_model():
               validation_data=(validation_data, validation_labels))
     model.save_weights(top_model_weights_path)
 
-    print(history.history.keys())
+    # print(history.history.keys())
     
     # visulization
     import matplotlib
@@ -124,7 +133,7 @@ def train_top_model():
     plt.xlabel('epoch')
     plt.ylabel('accuracy')
     plt.legend(['train', 'validation'], loc='upper left')
-    plt.savefig('accuracy.png')
+    plt.savefig(result_dir + 'accuracy.png')
     plt.close()
     # summarize history for loss
     plt.figure()
@@ -134,9 +143,14 @@ def train_top_model():
     plt.xlabel('epoch')
     plt.ylabel('loss')
     plt.legend(['train', 'validation'], loc='upper right')
-    plt.savefig('loss.png')
+    plt.savefig(result_dir + 'loss.png')
     plt.close()
 
 
-# save_bottlebeck_features()
+if not os.path.isdir(result_dir):
+    os.makedirs(result_dir)
+
+if not (os.path.exists(bn_train_path) and os.path.exists(bn_validation_path)):
+    save_bottlebeck_features()
+
 train_top_model()
