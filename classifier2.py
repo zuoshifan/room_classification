@@ -47,8 +47,8 @@ from keras import regularizers
 
 
 result_dir = 'four_classes/adam/'
-bn_train_path = result_dir + 'bottleneck_features_train.npy'
-bn_validation_path = result_dir + 'bottleneck_features_validation.npy'
+bn_train_path = result_dir + 'bottleneck_features_train.npz'
+bn_validation_path = result_dir + 'bottleneck_features_validation.npz'
 top_model_weights_path = result_dir + 'bottleneck_fc_model.h5'
 train_data_dir = 'data/train'
 validation_data_dir = 'data/validation'
@@ -57,56 +57,66 @@ nb_classes = 4
 nb_train_samples = 1600 # per class
 nb_validation_samples = 320 # per class
 img_width, img_height = 150, 150
-epochs = 100
+epochs = 50
 batch_size = 32
+aug_factor = 50
 
 
 def save_bottlebeck_features():
-    datagen = ImageDataGenerator(rescale=1. / 255)
+    train_datagen = ImageDataGenerator(
+	    rescale=1. / 255,
+            rotation_range=0.2,
+	    width_shift_range=0.2,
+	    height_shift_range=0.2,
+	    shear_range=0.2,
+	    zoom_range=0.2,
+	    horizontal_flip=True)
+
+    test_datagen = ImageDataGenerator(rescale=1. / 255)
 
     # build the VGG16 network
     model = applications.VGG16(include_top=False, weights='imagenet')
 
-    generator = datagen.flow_from_directory(
+    train_generator = train_datagen.flow_from_directory(
         train_data_dir,
         target_size=(img_width, img_height),
         batch_size=batch_size,
         class_mode=None,
         shuffle=False)
     bottleneck_features_train = model.predict_generator(
-        generator, nb_classes * nb_train_samples // batch_size)
-    np.save(open(bn_train_path, 'w'),
-            bottleneck_features_train)
+        train_generator, aug_factor * nb_classes * nb_train_samples // batch_size)
+    train_labels = np.tile(np.repeat(np.arange(nb_classes), nb_train_samples), aug_factor)
+    np.savez(bn_train_path, data=bottleneck_features_train, label=train_labels)
 
-    generator = datagen.flow_from_directory(
+    test_generator = test_datagen.flow_from_directory(
         validation_data_dir,
         target_size=(img_width, img_height),
         batch_size=batch_size,
         class_mode=None,
         shuffle=False)
     bottleneck_features_validation = model.predict_generator(
-        generator, nb_classes * nb_validation_samples // batch_size)
-    np.save(open(bn_validation_path, 'w'),
-            bottleneck_features_validation)
+        test_generator, nb_classes * nb_validation_samples // batch_size)
+    validation_labels = np.repeat(np.arange(nb_classes), nb_validation_samples)
+    np.savez(bn_validation_path, data=bottleneck_features_validation, label=validation_labels)
 
 
 def train_top_model():
-    train_data = np.load(open(bn_train_path))
-    train_labels = np.repeat(np.arange(nb_classes), nb_train_samples)
+    train = np.load(bn_train_path)
+    train_data, train_labels = train['data'], train['label']
     # convert labels to categorical one-hot encoding
     train_labels = to_categorical(train_labels, num_classes=nb_classes)
     # print train_data.shape, train_labels.shape
 
-    validation_data = np.load(open(bn_validation_path))
-    validation_labels = np.repeat(np.arange(nb_classes), nb_validation_samples)
+    validation = np.load(bn_validation_path)
+    validation_data, validation_labels = validation['data'], validation['label']
     # convert labels to categorical one-hot encoding
     validation_labels = to_categorical(validation_labels, num_classes=nb_classes)
     # print validation_data.shape, validation_labels.shape
 
     model = Sequential()
     model.add(Flatten(input_shape=train_data.shape[1:]))
-    # model.add(Dense(256, activation='relu'))
-    model.add(Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.0012)))
+    model.add(Dense(256, activation='relu'))
+    # model.add(Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.0012)))
     model.add(Dropout(0.5))
     model.add(Dense(nb_classes, activation='softmax'))
 
