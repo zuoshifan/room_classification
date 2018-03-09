@@ -59,23 +59,28 @@ nb_validation_samples = 320 # per class
 img_width, img_height = 150, 150
 epochs = 50
 batch_size = 32
-aug_factor = 50
+aug_factor = 1
 
 
 def save_bottlebeck_features():
-    train_datagen = ImageDataGenerator(
-	    rescale=1. / 255,
-            rotation_range=0.2,
-	    width_shift_range=0.2,
-	    height_shift_range=0.2,
-	    shear_range=0.2,
-	    zoom_range=0.2,
-	    horizontal_flip=True)
+#     train_datagen = ImageDataGenerator(
+# 	    rescale=1. / 255,
+#             rotation_range=0.2,
+# 	    width_shift_range=0.2,
+# 	    height_shift_range=0.2,
+# 	    shear_range=0.2,
+# 	    zoom_range=0.2,
+# 	    horizontal_flip=True)
+
+    train_datagen = ImageDataGenerator(rescale=1. / 255)
 
     test_datagen = ImageDataGenerator(rescale=1. / 255)
 
     # build the VGG16 network
-    model = applications.VGG16(include_top=False, weights='imagenet')
+    # model = applications.VGG16(include_top=False, weights='imagenet')
+
+    # build the InceptionResNetV2 network
+    model = applications.InceptionV3(include_top=False, weights='imagenet')
 
     train_generator = train_datagen.flow_from_directory(
         train_data_dir,

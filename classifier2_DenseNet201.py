@@ -56,10 +56,10 @@ validation_data_dir = 'data/validation'
 nb_classes = 4
 nb_train_samples = 1600 # per class
 nb_validation_samples = 320 # per class
-img_width, img_height = 150, 150
-epochs = 50
+img_width, img_height = 224, 224
+epochs = 100
 batch_size = 32
-aug_factor = 50
+aug_factor = 20
 
 
 def save_bottlebeck_features():
@@ -72,10 +72,15 @@ def save_bottlebeck_features():
 	    zoom_range=0.2,
 	    horizontal_flip=True)
 
+    # train_datagen = ImageDataGenerator(rescale=1. / 255)
+
     test_datagen = ImageDataGenerator(rescale=1. / 255)
 
     # build the VGG16 network
-    model = applications.VGG16(include_top=False, weights='imagenet')
+    # model = applications.VGG16(include_top=False, weights='imagenet')
+
+    # build the DenseNet201 network
+    model = applications.DenseNet201(include_top=False, weights='imagenet')
 
     train_generator = train_datagen.flow_from_directory(
         train_data_dir,
@@ -118,7 +123,10 @@ def train_top_model():
     model.add(Dense(256, activation='relu'))
     # model.add(Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.0012)))
     model.add(Dropout(0.5))
-    # model.add(BatchNormalization())
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.5))
+    # model.add(Dense(16, activation='relu'))
+    # model.add(Dropout(0.5))
     model.add(Dense(nb_classes, activation='softmax'))
 
     model.compile(optimizer='adam',
