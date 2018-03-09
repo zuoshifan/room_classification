@@ -10,7 +10,7 @@ dest_dir = './data/'
 
 train_size = 1600
 validation_size = 320
-img_width, img_height = 150, 150
+img_width, img_height = 224, 224
 
 keywords = ['bathroom', 'bedroom', 'livingroom', 'kitchen']
 
@@ -39,5 +39,6 @@ for keyword in keywords:
     
         # resize image and save to file
         img = misc.imread(fl)
-        new_img = misc.imresize(img, [img_width, img_height], interp='nearest')
+        # new_img = misc.imresize(img, [img_width, img_height], interp='nearest')
+        new_img = misc.imresize(img, [img_width, img_height], interp='bicubic')
         misc.imsave(new_fl_name, new_img)
