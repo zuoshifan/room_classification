@@ -1,40 +1,53 @@
-'''This script goes along the blog post
-"Building powerful image classification models using very little data"
-from blog.keras.io.
-It uses data that can be downloaded at:
-https://www.kaggle.com/c/dogs-vs-cats/data
+"""
+A 4 classes room classifier on top of NASNetLarge.
+
 In our setup, we:
 - created a data/ folder
 - created train/ and validation/ subfolders inside data/
-- created cats/ and dogs/ subfolders inside train/ and validation/
-- put the cat pictures index 0-999 in data/train/cats
-- put the cat pictures index 1000-1400 in data/validation/cats
-- put the dogs pictures index 12500-13499 in data/train/dogs
-- put the dog pictures index 13500-13900 in data/validation/dogs
-So that we have 1000 training examples for each class, and 400 validation examples for each class.
+- created bedroom/, bathroom/, livingroom/ and kitchen/ subfolders inside train/ and validation/
+- put the corresponding training pictures in data/train/*
+- put the corresponding validation pictures in data/validation/*
+
 In summary, this is our directory structure:
 ```
 data/
     train/
-        dogs/
-            dog001.jpg
-            dog002.jpg
+        bedroom/
+            bedroom0001.jpg
+            bedroom0002.jpg
             ...
-        cats/
-            cat001.jpg
-            cat002.jpg
+        bathroom/
+            bathroom0001.jpg
+            bathroom0002.jpg
+            ...
+        livingroom/
+            livingroom0001.jpg
+            livingroom0002.jpg
+            ...
+        kitchen/
+            kitchen0001.jpg
+            kitchen0002.jpg
             ...
     validation/
-        dogs/
-            dog001.jpg
-            dog002.jpg
+        bedroom/
+            bedroom0001.jpg
+            bedroom0002.jpg
             ...
-        cats/
-            cat001.jpg
-            cat002.jpg
+        bathroom/
+            bathroom0001.jpg
+            bathroom0002.jpg
+            ...
+        livingroom/
+            livingroom0001.jpg
+            livingroom0002.jpg
+            ...
+        kitchen/
+            kitchen0001.jpg
+            kitchen0002.jpg
             ...
 ```
-'''
+"""
+
 import os
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
@@ -46,7 +59,7 @@ from keras import regularizers
 
 
 
-result_dir = 'four_classes/adam_NASNetLarge/'
+result_dir = 'four_classes/NASNetLarge/'
 bn_train_path = result_dir + 'bottleneck_features_train.npz'
 bn_validation_path = result_dir + 'bottleneck_features_validation.npz'
 top_model_weights_path = result_dir + 'bottleneck_fc_model.h5'
@@ -63,21 +76,9 @@ aug_factor = 1
 
 
 def save_bottlebeck_features():
-#     train_datagen = ImageDataGenerator(
-# 	    rescale=1. / 255,
-#             rotation_range=0.2,
-# 	    width_shift_range=0.2,
-# 	    height_shift_range=0.2,
-# 	    shear_range=0.2,
-# 	    zoom_range=0.2,
-# 	    horizontal_flip=True)
-
     train_datagen = ImageDataGenerator(rescale=1. / 255)
 
     test_datagen = ImageDataGenerator(rescale=1. / 255)
-
-    # build the VGG16 network
-    # model = applications.VGG16(include_top=False, weights='imagenet')
 
     # build the NASNetLarge network
     model = applications.NASNetLarge(include_top=False, weights='imagenet')
@@ -136,7 +137,7 @@ def train_top_model():
     model.save_weights(top_model_weights_path)
 
     # print(history.history.keys())
-    
+
     # visulization
     import matplotlib
     matplotlib.use('Agg')
