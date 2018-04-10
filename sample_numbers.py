@@ -1,3 +1,5 @@
+"""Check sample numbers of each class."""
+
 import glob
 
 

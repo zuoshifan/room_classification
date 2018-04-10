@@ -1,3 +1,5 @@
+"""Prepare images for CNN training."""
+
 import os
 import os.path as path
 import glob
@@ -19,7 +21,7 @@ for keyword in keywords:
     # print len(files)
     # print path.basename(files[0]), path.basename(files[0]).split('.')[0]
     # print path.basename(files[1]), path.basename(files[1]).split('.')[0]
-    
+
     for fi, fl in enumerate(files):
         fl_name = path.basename(fl)
         idx, suffix = fl_name.split('.')
@@ -33,10 +35,10 @@ for keyword in keywords:
         new_fl_path = path.dirname(new_fl_name)
         if not path.isdir(new_fl_path):
             os.makedirs(new_fl_path)
-    
+
         # copy file to new dir
         # shutil.copyfile(fl, new_fl_name)
-    
+
         # resize image and save to file
         img = misc.imread(fl)
         # new_img = misc.imresize(img, [img_width, img_height], interp='nearest')

@@ -70,8 +70,6 @@ def get_img(data_list, local_path):
 
 
 if __name__ == '__main__':
-    # keywords = ['卧室', '卫生间']
-    # keywords = ['客厅', '厨房']
     keywords = ['厨房']
     kw_dict = {
                '卧室': 'bedroom',
